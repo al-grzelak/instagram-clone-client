@@ -1,25 +1,16 @@
 import createMockStore from "redux-mock-store";
 import thunk from "redux-thunk";
 import { fetchPosts } from "./postsActions";
-import Axios from "axios";
-
-jest.mock("Axios", () => {
-  return {
-    get: jest.fn(
-      () => new Promise((resolve, reject) => resolve({ data: posts })),
-    ),
-  };
-});
+import moxios from "moxios";
 
 const middlewares = [thunk];
 const mockStore = createMockStore(middlewares);
 
 const initialState = {
-  items: [],
-  isLoading: false,
+  data: [],
+  loading: false,
   error: null,
 };
-
 const posts = [
   { photos: ["https://apple.com"], description: "Hello World" },
   {
@@ -32,31 +23,42 @@ describe("fetchPosts", function () {
   let store: any;
 
   beforeEach(() => {
+    moxios.install();
     store = mockStore(initialState);
   });
 
+  afterEach(() => {
+    moxios.uninstall();
+  });
+
   it("should handle successful fetch", async function () {
+    moxios.wait(() => {
+      let request = moxios.requests.mostRecent();
+      request.respondWith({ status: 200, response: posts });
+    });
     const expectedActions: any = [
       { type: "FETCH_POSTS_REQUEST" },
-      { type: "FETCH_POSTS_SUCCESS", payload: { items: posts } },
+      { type: "FETCH_POSTS_SUCCESS", payload: { data: posts } },
     ];
 
     await store.dispatch(fetchPosts());
+
     expect(store.getActions()).toEqual(expectedActions);
-    expect(Axios.get).toHaveBeenCalled();
   });
 
   it("should handle failed fetch", async function () {
-    const error = new Error("FAILURE");
+    moxios.wait(() => {
+      let request = moxios.requests.mostRecent();
+      request.respondWith({ status: 400 });
+    });
+    const error = new Error("Request failed with status code 400");
     const expectedActions: any = [
       { type: "FETCH_POSTS_REQUEST" },
       { type: "FETCH_POSTS_FAILURE", payload: { error } },
     ];
-    (Axios.get as jest.MockedFunction<typeof Axios.get>).mockRejectedValue(
-      error,
-    );
+
     await store.dispatch(fetchPosts());
+
     expect(store.getActions()).toEqual(expectedActions);
-    expect(Axios.get).toHaveBeenCalled();
   });
 });

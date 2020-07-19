@@ -16,7 +16,7 @@ export interface FetchPostsFailure {
 export interface FetchPostsSuccess {
   type: PostsActionType.FETCH_POSTS_SUCCESS;
   payload: {
-    items: Post[];
+    data: Post[];
   };
 }
 
@@ -41,7 +41,7 @@ export function fetchPostsSuccess(posts: Post[]) {
   return {
     type: PostsActionType.FETCH_POSTS_SUCCESS,
     payload: {
-      items: posts,
+      data: posts,
     },
   };
 }
@@ -59,7 +59,7 @@ export function fetchPosts() {
   return async (dispatch: Dispatch): Promise<void> => {
     dispatch(fetchPostsRequest());
     try {
-      const { data: posts } = await Axios.get<Post[]>(API_URL);
+      const { data: posts } = await Axios.get<Post[]>(`${API_URL}/posts`);
       dispatch(fetchPostsSuccess(posts));
     } catch (e) {
       dispatch(fetchPostsFailure(e));
